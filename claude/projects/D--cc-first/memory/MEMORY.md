@@ -1,0 +1,1 @@
+- [中文回复偏好](projects/D--cc-first/memory/respond-in-chinese.md) — 所有回复必须使用中文（简体）

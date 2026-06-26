@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>番茄钟</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+  :root {
+    --color-work: #e74c3c;
+    --color-short: #2ecc71;
+    --color-long: #3498db;
+    --bg: #1a1a2e;
+    --surface: #16213e;
+    --text: #eee;
+    --text-dim: #aaa;
+    --radius: 16px;
+    --duration: 300ms;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background var(--duration);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ---- Tomato background ---- */
+  body::before {
+    content: '🍅';
+    position: fixed;
+    font-size: 320px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: .06;
+    pointer-events: none;
+    z-index: 0;
+    user-select: none;
+  }
+
+  .app { position: relative; z-index: 1; }
+
+  .app {
+    width: 420px;
+    max-width: 95vw;
+    text-align: center;
+  }
+
+  /* ---- Header ---- */
+  .header { margin-bottom: 32px; }
+  .header h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: 2px; }
+
+  /* ---- Mode Tabs ---- */
+  .tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 36px; }
+  .tab {
+    padding: 8px 20px;
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background: var(--surface);
+    color: var(--text-dim);
+    font-size: .9rem;
+    cursor: pointer;
+    transition: all var(--duration);
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: #fff; border-color: currentColor; }
+  .tab[data-mode="work"]     { color: var(--color-work); }
+  .tab[data-mode="short"]    { color: var(--color-short); }
+  .tab[data-mode="long"]     { color: var(--color-long); }
+
+  /* ---- Ring ---- */
+  .ring-wrap { position: relative; width: 260px; height: 260px; margin: 0 auto 36px; }
+  .ring-wrap svg { transform: rotate(-90deg); }
+  .ring-bg { fill: none; stroke: var(--surface); stroke-width: 8; }
+  .ring-fg {
+    fill: none;
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke var(--duration);
+  }
+  .timer-display {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .time { font-size: 3.6rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .label  { font-size: .95rem; color: var(--text-dim); margin-top: 4px; }
+
+  /* ---- Controls ---- */
+  .controls { display: flex; gap: 14px; justify-content: center; margin-bottom: 32px; }
+  .btn {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    border: none;
+    font-size: 1.3rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform var(--duration), opacity var(--duration);
+  }
+  .btn:active { transform: scale(.92); }
+  .btn-primary {
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(0,0,0,.35);
+  }
+  .btn-secondary {
+    background: var(--surface);
+    color: var(--text-dim);
+  }
+  .btn-secondary:hover { color: var(--text); }
+
+  /* ---- Sessions ---- */
+  .sessions { display: flex; gap: 10px; justify-content: center; }
+  .dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--surface);
+    transition: background var(--duration);
+  }
+  .dot.filled { opacity: .85; }
+
+  /* ---- Color helpers ---- */
+  .mode-work     { --accent: var(--color-work); }
+  .mode-short    { --accent: var(--color-short); }
+  .mode-long     { --accent: var(--color-long); }
+
+  .tab.active,
+  .btn-primary.mode-work,
+  .dot.filled.mode-work     { background: var(--color-work); }
+  .tab.active,
+  .btn-primary.mode-short,
+  .dot.filled.mode-short    { background: var(--color-short); }
+  .tab.active,
+  .btn-primary.mode-long,
+  .dot.filled.mode-long     { background: var(--color-long); }
+
+  .ring-fg { stroke: var(--accent); }
+  .btn-primary { background: var(--accent); }
+  .dot.filled  { background: var(--accent); }
+
+  /* ---- Pulse animation when running ---- */
+  @keyframes pulse {
+    0%,100% { transform: scale(1); }
+    50%     { transform: scale(1.04); }
+  }
+  .ring-wrap.running { animation: pulse 2s ease-in-out infinite; }
+</style>
+</head>
+<body>
+<div class="app mode-work" id="app">
+  <div class="header">
+    <h1>🍅 番茄钟</h1>
+  </div>
+
+  <!-- Mode tabs -->
+  <div class="tabs">
+    <button class="tab active" data-mode="work">工作</button>
+    <button class="tab" data-mode="short">短休息</button>
+    <button class="tab" data-mode="long">长休息</button>
+  </div>
+
+  <!-- Timer ring -->
+  <div class="ring-wrap" id="ringWrap">
+    <svg width="260" height="260" viewBox="0 0 260 260">
+      <circle class="ring-bg" cx="130" cy="130" r="120"/>
+      <circle class="ring-fg" id="ringFg" cx="130" cy="130" r="120"
+              stroke-dasharray="753.98" stroke-dashoffset="0"/>
+    </svg>
+    <div class="timer-display">
+      <div class="time" id="timeDisplay">25:00</div>
+      <div class="label" id="phaseLabel">准备专注</div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button class="btn btn-secondary" id="resetBtn" title="重置">↺</button>
+    <button class="btn btn-primary mode-work" id="toggleBtn" title="开始">▶</button>
+    <button class="btn btn-secondary" id="skipBtn" title="跳过">⏭</button>
+  </div>
+
+  <!-- Session dots -->
+  <div class="sessions" id="sessions"></div>
+</div>
+
+<script>
+(() => {
+  // ---- Config ----
+  const MODES = {
+    work:  { duration: 25 * 60, label: '专注中' },
+    short: { duration:  5 * 60, label: '短休息' },
+    long:  { duration: 15 * 60, label: '长休息' },
+  };
+  const LONG_INTERVAL = 4;          // every N work sessions → long break
+  const CIRCUMFERENCE = 2 * Math.PI * 120; // ≈ 753.98
+
+  // ---- State ----
+  let mode = 'work';
+  let totalSec = MODES.work.duration;
+  let remainSec = totalSec;
+  let running = false;
+  let intervalId = null;
+  let completedSessions = 0;       // work sessions completed in current cycle
+
+  // ---- DOM refs ----
+  const $app         = document.getElementById('app');
+  const $ringFg      = document.getElementById('ringFg');
+  const $ringWrap    = document.getElementById('ringWrap');
+  const $timeDisplay = document.getElementById('timeDisplay');
+  const $phaseLabel  = document.getElementById('phaseLabel');
+  const $toggleBtn   = document.getElementById('toggleBtn');
+  const $resetBtn    = document.getElementById('resetBtn');
+  const $skipBtn     = document.getElementById('skipBtn');
+  const $sessions    = document.getElementById('sessions');
+  const $tabs        = document.querySelectorAll('.tab');
+
+  // ---- Helpers ----
+  function fmt(sec) {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }
+
+  function updateRing() {
+    const progress = remainSec / totalSec;
+    $ringFg.setAttribute('stroke-dashoffset', CIRCUMFERENCE * (1 - progress));
+  }
+
+  function updateDisplay() {
+    $timeDisplay.textContent = fmt(remainSec);
+    document.title = `${fmt(remainSec)} — 番茄钟`;
+    updateRing();
+  }
+
+  function updateClass() {
+    $app.className = `app mode-${mode}`;
+    $toggleBtn.className = `btn btn-primary mode-${mode}`;
+    $phaseLabel.textContent = running ? MODES[mode].label : '准备专注';
+  }
+
+  function renderDots() {
+    const cycleDone = completedSessions % LONG_INTERVAL;
+    let html = '';
+    for (let i = 0; i < LONG_INTERVAL; i++) {
+      const filled = i < cycleDone;
+      html += `<span class="dot${filled ? ' filled' : ''} mode-${mode}"></span>`;
+    }
+    $sessions.innerHTML = html;
+  }
+
+  // ---- Audio beep ----
+  function beep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      [0, 0.2, 0.4].forEach(delay => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = 800;
+        osc.type = 'sine';
+        gain.gain.setValueAtTime(0.3, ctx.currentTime + delay);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.18);
+        osc.start(ctx.currentTime + delay);
+        osc.stop(ctx.currentTime + delay + 0.2);
+      });
+    } catch (_) { /* audio not available */ }
+  }
+
+  // ---- Tick ----
+  function tick() {
+    if (remainSec <= 0) {
+      stop();
+      beep();
+      advance();
+      return;
+    }
+    remainSec--;
+    updateDisplay();
+  }
+
+  // ---- Advance (work → short / short → work, with long every N) ----
+  function advance() {
+    if (mode === 'work') {
+      completedSessions++;
+      renderDots();
+      if (completedSessions % LONG_INTERVAL === 0) {
+        switchMode('long');
+      } else {
+        switchMode('short');
+      }
+    } else {
+      switchMode('work');
+    }
+  }
+
+  function switchMode(m) {
+    mode = m;
+    totalSec = MODES[m].duration;
+    remainSec = totalSec;
+    updateClass();
+    updateDisplay();
+  }
+
+  // ---- Start / Pause ----
+  function start() {
+    if (running) return;
+    running = true;
+    $ringWrap.classList.add('running');
+    $toggleBtn.textContent = '⏸';
+    updateClass();
+    intervalId = setInterval(tick, 1000);
+  }
+
+  function stop() {
+    running = false;
+    $ringWrap.classList.remove('running');
+    $toggleBtn.textContent = '▶';
+    clearInterval(intervalId);
+    intervalId = null;
+  }
+
+  function toggle() {
+    running ? stop() : start();
+  }
+
+  function reset() {
+    stop();
+    remainSec = totalSec;
+    updateDisplay();
+    $phaseLabel.textContent = '准备专注';
+  }
+
+  function skip() {
+    stop();
+    advance();
+  }
+
+  // ---- Event listeners ----
+  $toggleBtn.addEventListener('click', toggle);
+  $resetBtn.addEventListener('click', reset);
+  $skipBtn.addEventListener('click', skip);
+
+  $tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      stop();
+      switchMode(tab.dataset.mode);
+      $tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      $phaseLabel.textContent = MODES[tab.dataset.mode].label;
+    });
+  });
+
+  // ---- Init ----
+  $ringFg.setAttribute('stroke-dasharray', CIRCUMFERENCE);
+  updateDisplay();
+  updateClass();
+  renderDots();
+})();
+</script>
+</body>
+</html>
