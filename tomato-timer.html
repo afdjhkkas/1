@@ -49,17 +49,29 @@
   .app { position: relative; z-index: 1; }
 
   .app {
-    width: 420px;
+    width: 440px;
     max-width: 95vw;
     text-align: center;
   }
 
   /* ---- Header ---- */
-  .header { margin-bottom: 32px; }
+  .header { margin-bottom: 24px; display:flex; align-items:center; justify-content:center; gap:12px; }
   .header h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: 2px; }
+  .icon-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: var(--surface);
+    color: var(--text-dim);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all var(--duration);
+    display: inline-flex; align-items:center; justify-content:center;
+  }
+  .icon-btn:hover { color: var(--text); }
 
   /* ---- Mode Tabs ---- */
-  .tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 36px; }
+  .tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 28px; }
   .tab {
     padding: 8px 20px;
     border-radius: 999px;
@@ -77,7 +89,7 @@
   .tab[data-mode="long"]     { color: var(--color-long); }
 
   /* ---- Ring ---- */
-  .ring-wrap { position: relative; width: 260px; height: 260px; margin: 0 auto 36px; }
+  .ring-wrap { position: relative; width: 260px; height: 260px; margin: 0 auto 28px; }
   .ring-wrap svg { transform: rotate(-90deg); }
   .ring-bg { fill: none; stroke: var(--surface); stroke-width: 8; }
   .ring-fg {
@@ -98,7 +110,7 @@
   .label  { font-size: .95rem; color: var(--text-dim); margin-top: 4px; }
 
   /* ---- Controls ---- */
-  .controls { display: flex; gap: 14px; justify-content: center; margin-bottom: 32px; }
+  .controls { display: flex; gap: 14px; justify-content: center; margin-bottom: 24px; }
   .btn {
     width: 64px; height: 64px;
     border-radius: 50%;
@@ -122,7 +134,7 @@
   .btn-secondary:hover { color: var(--text); }
 
   /* ---- Sessions ---- */
-  .sessions { display: flex; gap: 10px; justify-content: center; }
+  .sessions { display: flex; gap: 10px; justify-content: center; margin-bottom: 8px; }
   .dot {
     width: 12px; height: 12px;
     border-radius: 50%;
@@ -130,6 +142,44 @@
     transition: background var(--duration);
   }
   .dot.filled { opacity: .85; }
+
+  /* ---- Stats ---- */
+  .stats {
+    display: flex; gap: 24px; justify-content: center;
+    margin-bottom: 24px;
+  }
+  .stat { text-align: center; min-width: 70px; }
+  .stat-num { font-size: 1.4rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stat-lbl { font-size: .75rem; color: var(--text-dim); margin-top: 2px; }
+
+  /* ---- Settings panel ---- */
+  .settings {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin-top: 20px;
+    text-align: left;
+    display: none;
+  }
+  .settings.open { display: block; }
+  .settings h2 { font-size: 1rem; margin-bottom: 16px; color: var(--text); }
+  .setting-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .setting-row label { font-size: .9rem; color: var(--text-dim); }
+  .setting-row .row-inputs { display: flex; align-items: center; gap: 6px; }
+  .setting-row input[type="number"] {
+    width: 64px;
+    background: var(--bg);
+    border: 1px solid #2a3550;
+    color: var(--text);
+    border-radius: 8px;
+    padding: 6px 8px;
+    font-size: .9rem;
+    text-align: center;
+  }
+  .setting-row input[type="number"]:focus { outline: none; border-color: var(--color-work); }
+  .setting-row .unit { font-size: .8rem; color: var(--text-dim); }
+  .setting-row .checkbox { display: flex; align-items: center; gap: 8px; font-size: .9rem; color: var(--text-dim); }
+  .setting-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--color-work); cursor: pointer; }
 
   /* ---- Color helpers ---- */
   .mode-work     { --accent: var(--color-work); }
@@ -162,6 +212,8 @@
 <div class="app mode-work" id="app">
   <div class="header">
     <h1>🍅 番茄钟</h1>
+    <button class="icon-btn" id="soundBtn" title="声音提醒">🔔</button>
+    <button class="icon-btn" id="settingsBtn" title="设置">⚙️</button>
   </div>
 
   <!-- Mode tabs -->
@@ -193,26 +245,118 @@
 
   <!-- Session dots -->
   <div class="sessions" id="sessions"></div>
+
+  <!-- Stats -->
+  <div class="stats" id="stats">
+    <div class="stat">
+      <div class="stat-num" id="statToday">0</div>
+      <div class="stat-lbl">今日番茄</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="statTotal">0</div>
+      <div class="stat-lbl">累计番茄</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="statFocus">0m</div>
+      <div class="stat-lbl">今日专注</div>
+    </div>
+  </div>
+
+  <!-- Settings panel -->
+  <div class="settings" id="settingsPanel">
+    <h2>设置</h2>
+    <div class="setting-row">
+      <label>工作时长</label>
+      <div class="row-inputs">
+        <input type="number" id="inWork" min="1" max="180">
+        <span class="unit">分钟</span>
+      </div>
+    </div>
+    <div class="setting-row">
+      <label>短休息</label>
+      <div class="row-inputs">
+        <input type="number" id="inShort" min="1" max="60">
+        <span class="unit">分钟</span>
+      </div>
+    </div>
+    <div class="setting-row">
+      <label>长休息</label>
+      <div class="row-inputs">
+        <input type="number" id="inLong" min="1" max="90">
+        <span class="unit">分钟</span>
+      </div>
+    </div>
+    <div class="setting-row">
+      <label>每 N 个工作后长休息</label>
+      <div class="row-inputs">
+        <input type="number" id="inInterval" min="1" max="10">
+      </div>
+    </div>
+    <div class="setting-row">
+      <label>循环自动继续</label>
+      <div class="checkbox">
+        <input type="checkbox" id="inAuto">
+        <span>休息结束自动开始下一段</span>
+      </div>
+    </div>
+    <button class="icon-btn" id="resetStatsBtn" title="清空全部统计" style="margin-top:6px">🗑</button>
+  </div>
 </div>
 
 <script>
 (() => {
-  // ---- Config ----
-  const MODES = {
-    work:  { duration: 25 * 60, label: '专注中' },
-    short: { duration:  5 * 60, label: '短休息' },
-    long:  { duration: 15 * 60, label: '长休息' },
+  // ---- Storage keys ----
+  const LS = {
+    settings: 'tomato.settings',
+    stats:    'tomato.stats',
   };
-  const LONG_INTERVAL = 4;          // every N work sessions → long break
-  const CIRCUMFERENCE = 2 * Math.PI * 120; // ≈ 753.98
+
+  // ---- Defaults ----
+  const DEFAULTS = {
+    work:   25,   // minutes
+    short:  5,
+    long:   15,
+    interval: 4,  // long break every N
+    auto:   false,
+    sound:  true,
+  };
+
+  // ---- Load / save ----
+  function loadSettings() {
+    try {
+      const raw = localStorage.getItem(LS.settings);
+      if (raw) return Object.assign({}, DEFAULTS, JSON.parse(raw));
+    } catch (_) {}
+    return Object.assign({}, DEFAULTS);
+  }
+  function saveSettings(s) {
+    try { localStorage.setItem(LS.settings, JSON.stringify(s)); } catch (_) {}
+  }
+  function loadStats() {
+    try {
+      const raw = localStorage.getItem(LS.stats);
+      if (raw) return JSON.parse(raw);
+    } catch (_) {}
+    return { total: 0, byDay: {} };
+  }
+  function saveStats(st) {
+    try { localStorage.setItem(LS.stats, JSON.stringify(st)); } catch (_) {}
+  }
+  function todayKey() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
 
   // ---- State ----
+  let settings = loadSettings();
+  let stats = loadStats();
   let mode = 'work';
-  let totalSec = MODES.work.duration;
+  let totalSec = settings.work * 60;
   let remainSec = totalSec;
   let running = false;
-  let intervalId = null;
-  let completedSessions = 0;       // work sessions completed in current cycle
+  let rafId = null;
+  let lastTimestamp = null;
+  let completedSessions = 0;   // work sessions completed in current cycle
 
   // ---- DOM refs ----
   const $app         = document.getElementById('app');
@@ -225,16 +369,42 @@
   const $skipBtn     = document.getElementById('skipBtn');
   const $sessions    = document.getElementById('sessions');
   const $tabs        = document.querySelectorAll('.tab');
+  const $soundBtn    = document.getElementById('soundBtn');
+  const $settingsBtn = document.getElementById('settingsBtn');
+  const $panel       = document.getElementById('settingsPanel');
+  const $inWork      = document.getElementById('inWork');
+  const $inShort     = document.getElementById('inShort');
+  const $inLong      = document.getElementById('inLong');
+  const $inInterval  = document.getElementById('inInterval');
+  const $inAuto      = document.getElementById('inAuto');
+  const $resetStats  = document.getElementById('resetStatsBtn');
+  const $statToday   = document.getElementById('statToday');
+  const $statTotal   = document.getElementById('statTotal');
+  const $statFocus   = document.getElementById('statFocus');
+
+  const CIRCUMFERENCE = 2 * Math.PI * 120; // ≈ 753.98
+
+  function durationsSec() {
+    return {
+      work:  settings.work   * 60,
+      short: settings.short  * 60,
+      long:  settings.long   * 60,
+    };
+  }
+  function currentLabel() {
+    return { work: '专注中', short: '短休息', long: '长休息' }[mode];
+  }
 
   // ---- Helpers ----
   function fmt(sec) {
+    sec = Math.max(0, Math.round(sec));
     const m = Math.floor(sec / 60);
     const s = sec % 60;
     return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
   }
 
   function updateRing() {
-    const progress = remainSec / totalSec;
+    const progress = totalSec > 0 ? remainSec / totalSec : 0;
     $ringFg.setAttribute('stroke-dashoffset', CIRCUMFERENCE * (1 - progress));
   }
 
@@ -247,56 +417,128 @@
   function updateClass() {
     $app.className = `app mode-${mode}`;
     $toggleBtn.className = `btn btn-primary mode-${mode}`;
-    $phaseLabel.textContent = running ? MODES[mode].label : '准备专注';
+    $phaseLabel.textContent = running ? currentLabel() : '准备专注';
   }
 
   function renderDots() {
-    const cycleDone = completedSessions % LONG_INTERVAL;
+    const n = settings.interval;
+    const cycleDone = n > 0 ? completedSessions % n : 0;
     let html = '';
-    for (let i = 0; i < LONG_INTERVAL; i++) {
+    for (let i = 0; i < n; i++) {
       const filled = i < cycleDone;
       html += `<span class="dot${filled ? ' filled' : ''} mode-${mode}"></span>`;
     }
     $sessions.innerHTML = html;
   }
 
-  // ---- Audio beep ----
-  function beep() {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      [0, 0.2, 0.4].forEach(delay => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.frequency.value = 800;
-        osc.type = 'sine';
-        gain.gain.setValueAtTime(0.3, ctx.currentTime + delay);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.18);
-        osc.start(ctx.currentTime + delay);
-        osc.stop(ctx.currentTime + delay + 0.2);
-      });
-    } catch (_) { /* audio not available */ }
+  function updateStats() {
+    const today = todayKey();
+    $statToday.textContent = stats.byDay[today] || 0;
+    $statTotal.textContent = stats.total;
+    const focusSec = (stats.byDay[today] || 0) * settings.work * 60;
+    const mins = Math.round(focusSec / 60);
+    $statFocus.textContent = mins >= 60
+      ? `${Math.floor(mins/60)}h${String(mins%60).padStart(2,'0')}`
+      : `${mins}m`;
   }
 
-  // ---- Tick ----
-  function tick() {
-    if (remainSec <= 0) {
-      stop();
-      beep();
-      advance();
-      return;
+  function recordCompletedSession() {
+    const today = todayKey();
+    stats.byDay[today] = (stats.byDay[today] || 0) + 1;
+    stats.total = (stats.total || 0) + 1;
+    // prune days older than 30
+    const keys = Object.keys(stats.byDay).sort();
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+    const cutoffKey = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart(2,'0')}-${String(cutoff.getDate()).padStart(2,'0')}`;
+    for (const k of keys) {
+      if (k < cutoffKey) delete stats.byDay[k];
     }
-    remainSec--;
-    updateDisplay();
+    saveStats(stats);
   }
 
-  // ---- Advance (work → short / short → work, with long every N) ----
+  // ---- Audio beep ----
+  let audioCtx = null;
+  function ensureAudio() {
+    if (audioCtx) return;
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch (_) { audioCtx = null; }
+  }
+  function beep() {
+    if (!settings.sound) return;
+    ensureAudio();
+    if (!audioCtx) return;
+    // unlock if suspended
+    if (audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
+    [0, 0.2, 0.4].forEach(delay => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.frequency.value = 880;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.3, audioCtx.currentTime + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + delay + 0.18);
+      osc.start(audioCtx.currentTime + delay);
+      osc.stop(audioCtx.currentTime + delay + 0.2);
+    });
+  }
+
+  // ---- Accurate timing via requestAnimationFrame + wall clock ----
+  // Track endTime (ms). Recompute remaining each frame from Date.now(),
+  // so background-tab throttling doesn't drift the timer.
+  let endTime = null;
+  function start() {
+    if (running) return;
+    running = true;
+    endTime = Date.now() + remainSec * 1000;
+    $ringWrap.classList.add('running');
+    $toggleBtn.textContent = '⏸';
+    updateClass();
+    ensureAudio();
+    loop();
+  }
+
+  function loop() {
+    rafId = requestAnimationFrame((ts) => {
+      if (!running) { rafId = null; return; }
+      const remainMs = endTime - Date.now();
+      const newRemain = Math.max(0, Math.ceil(remainMs / 1000));
+      if (newRemain !== remainSec) {
+        remainSec = newRemain;
+        updateDisplay();
+      }
+      if (remainMs <= 0) {
+        onPhaseComplete();
+        return;
+      }
+      loop();
+    });
+  }
+
+  function stop() {
+    running = false;
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+    $ringWrap.classList.remove('running');
+    $toggleBtn.textContent = '▶';
+  }
+
+  function onPhaseComplete() {
+    stop();
+    beep();
+    advance();
+    if (settings.auto) start();
+  }
+
+  // ---- Advance (work → short / short/long → work) ----
   function advance() {
     if (mode === 'work') {
       completedSessions++;
+      recordCompletedSession();
       renderDots();
-      if (completedSessions % LONG_INTERVAL === 0) {
+      updateStats();
+      if (completedSessions > 0 && completedSessions % settings.interval === 0) {
         switchMode('long');
       } else {
         switchMode('short');
@@ -308,30 +550,14 @@
 
   function switchMode(m) {
     mode = m;
-    totalSec = MODES[m].duration;
+    totalSec = durationsSec()[m];
     remainSec = totalSec;
     updateClass();
     updateDisplay();
+    renderDots();
   }
 
-  // ---- Start / Pause ----
-  function start() {
-    if (running) return;
-    running = true;
-    $ringWrap.classList.add('running');
-    $toggleBtn.textContent = '⏸';
-    updateClass();
-    intervalId = setInterval(tick, 1000);
-  }
-
-  function stop() {
-    running = false;
-    $ringWrap.classList.remove('running');
-    $toggleBtn.textContent = '▶';
-    clearInterval(intervalId);
-    intervalId = null;
-  }
-
+  // ---- Controls ----
   function toggle() {
     running ? stop() : start();
   }
@@ -356,18 +582,98 @@
   $tabs.forEach(tab => {
     tab.addEventListener('click', () => {
       stop();
-      switchMode(tab.dataset.mode);
+      const m = tab.dataset.mode;
+      switchMode(m);
       $tabs.forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
-      $phaseLabel.textContent = MODES[tab.dataset.mode].label;
     });
+  });
+
+  // Sound toggle
+  function syncSoundBtn() {
+    $soundBtn.textContent = settings.sound ? '🔔' : '🔕';
+    $soundBtn.title = settings.sound ? '声音提醒（开）' : '声音提醒（关）';
+  }
+  $soundBtn.addEventListener('click', () => {
+    settings.sound = !settings.sound;
+    saveSettings(settings);
+    syncSoundBtn();
+  });
+
+  // Settings panel
+  $settingsBtn.addEventListener('click', () => {
+    const open = $panel.classList.toggle('open');
+    if (open) {
+      $inWork.value = settings.work;
+      $inShort.value = settings.short;
+      $inLong.value = settings.long;
+      $inInterval.value = settings.interval;
+      $inAuto.checked = settings.auto;
+    }
+  });
+
+  function applySetting(input, key, min, max) {
+    input.addEventListener('change', () => {
+      let v = parseInt(input.value, 10);
+      if (isNaN(v)) v = DEFAULTS[key];
+      v = Math.min(max, Math.max(min, v));
+      input.value = v;
+      settings[key] = v;
+      saveSettings(settings);
+      if (!running) {
+        totalSec = durationsSec()[mode];
+        remainSec = totalSec;
+        updateDisplay();
+      }
+      renderDots();
+      updateStats();
+    });
+  }
+  applySetting($inWork, 'work', 1, 180);
+  applySetting($inShort, 'short', 1, 60);
+  applySetting($inLong, 'long', 1, 90);
+  applySetting($inInterval, 'interval', 1, 10);
+
+  $inAuto.addEventListener('change', () => {
+    settings.auto = $inAuto.checked;
+    saveSettings(settings);
+  });
+
+  $resetStats.addEventListener('click', () => {
+    if (confirm('确定清空全部统计？')) {
+      stats = { total: 0, byDay: {} };
+      completedSessions = 0;
+      saveStats(stats);
+      renderDots();
+      updateStats();
+    }
+  });
+
+  // ---- Keyboard ----
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT') return;
+    if (e.code === 'Space') { e.preventDefault(); toggle(); }
+    else if (e.code === 'KeyR') reset();
+    else if (e.code === 'KeyS') skip();
+  });
+
+  // ---- Page visibility: re-sync when coming back to tab ----
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && running) {
+      // recompute from wall clock; the rAF loop self-corrects,
+      // but if it was fully throttled, force one update
+      remainSec = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+      updateDisplay();
+    }
   });
 
   // ---- Init ----
   $ringFg.setAttribute('stroke-dasharray', CIRCUMFERENCE);
+  syncSoundBtn();
   updateDisplay();
   updateClass();
   renderDots();
+  updateStats();
 })();
 </script>
 </body>
